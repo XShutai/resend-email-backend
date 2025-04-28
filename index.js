@@ -19,7 +19,7 @@ app.post("/send-email", async (req, res) => {
 
   try {
     const response = await resend.emails.send({
-      from: "Your App <onboarding@resend.dev>",  // Resend default sandbox domain
+      from: "System Test <noreply@josephphiri.com>",  // Resend default sandbox domain
       to,
       subject,
       text,
