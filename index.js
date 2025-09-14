@@ -25,7 +25,7 @@ app.post("/send-email", async (req, res) => {
 
   try {
     const response = await resend.emails.send({
-      from: process.env.SMTP_FROM_EMAIL || "onboarding@resend.dev",
+      from: process.env.SMTP_FROM_EMAIL || "info@moneyacumenadvisory.com",
       to,
       subject,
       text,
