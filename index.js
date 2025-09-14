@@ -19,7 +19,8 @@ app.post("/send-email", async (req, res) => {
 
   try {
     const response = await resend.emails.send({
-      from: "System Test <noreply@josephphiri.com>",
+      from: "System Test <noreply@moneyacumenadvisory.com>",
+
       to,
       subject,
       text,
