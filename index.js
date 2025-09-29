@@ -17,24 +17,67 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Send Email Route
 app.post("/send-email", async (req, res) => {
-  const { to, subject, text } = req.body;
+  const { to, subject, text, html, attachments } = req.body;
 
-  if (!to || !subject || !text) {
+  if (!to || !subject || !(text || html)) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
   try {
-    const response = await resend.emails.send({
+    // Log incoming request size
+    const requestSize = JSON.stringify(req.body).length;
+    console.log(`Request size: ${Math.ceil(requestSize / 1024)}KB`);
+    
+    // Log attachment details if present
+    if (attachments?.length) {
+      attachments.forEach(attachment => {
+        const size = Math.ceil((attachment.content.length * 0.75) / 1024); // base64 to binary size
+        console.log(`Attachment ${attachment.filename}: ${size}KB`);
+      });
+    }
+
+    const emailData = {
       from: `${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`,
       to,
       subject,
       text,
-    });
+      html
+    };
 
-    res.status(200).json({ message: "Email sent ✅", data: response });
+    // Handle attachments according to Resend's format
+    if (attachments?.length) {
+      emailData.attachments = attachments.map(attachment => ({
+        filename: attachment.filename,
+        content: attachment.content // Base64 content
+      }));
+    }
+
+    const response = await resend.emails.send(emailData);
+    res.status(200).json({
+      message: "Email sent ✅",
+      data: response,
+      requestSize: `${Math.ceil(requestSize / 1024)}KB`
+    });
   } catch (error) {
-    console.error("Send error:", error);
-    res.status(500).json({ error: "Failed to send email" });
+    console.error("Send error:", {
+      status: error.statusCode,
+      message: error.message,
+      details: error.response
+    });
+    
+    // Handle specific error cases
+    if (error.statusCode === 413) {
+      return res.status(413).json({
+        error: "Attachment too large",
+        message: "Please reduce the size of your attachments or send them in smaller chunks",
+        details: error.response
+      });
+    }
+    
+    res.status(error.statusCode || 500).json({
+      error: error.message || "Failed to send email",
+      details: error.response || {}
+    });
   }
 });
 
